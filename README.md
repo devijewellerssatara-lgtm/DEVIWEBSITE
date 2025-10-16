@@ -68,3 +68,56 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+
+---
+
+## Backend API and Firestore → PostgreSQL Migration
+
+This project now includes a small Node/Express backend under `server/` that exposes REST endpoints used by the React app to read/update the Current Rates using PostgreSQL instead of Firebase Firestore.
+
+What changed:
+- React no longer reads/writes the `rates` document from Firestore.
+- Instead, it calls:
+  - `GET /api/rates` to fetch current rates
+  - `PUT /api/rates` to update rates
+
+### Start the backend
+
+1) Create a PostgreSQL database (default name `jewellery`) and export a connection:
+- Either set `DATABASE_URL=postgres://user:pass@host:5432/jewellery`
+- Or set individual `PG*` variables. See `server/.env.example`.
+
+2) Install and run the backend:
+```
+cd server
+npm install
+cp .env.example .env   # edit values if needed
+npm run migrate        # creates the rates table
+npm run dev            # starts http://localhost:4000
+```
+
+The CRA dev server will proxy `/api/*` to your backend if you add a proxy or run both on the same domain. In development, you can call absolute `http://localhost:4000/api/...` endpoints or configure a proxy in CRA if desired.
+
+### One-off migration from Firestore
+
+If you have an existing Firestore document for rates:
+
+1) Create a Google Cloud service account for your Firebase project and download the JSON key. Set:
+```
+export GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/serviceAccount.json
+```
+
+2) Ensure your Postgres environment variables are set (see above).
+
+3) Run:
+```
+cd server
+npm install
+npm run import:firestore
+```
+
+This script reads the `rates` document (default ID `GF8lmn4pjyeuqPzA0xDE`) from the `rates` collection and upserts it into the `rates` table. You can override the ID via the `RATES_ID` env var.
+
+### Firebase Storage
+
+Image uploads in the app still use Firebase Storage. If you also want to migrate image storage (e.g., S3 or local), say so and we can add endpoints and integrate a new storage provider.
