@@ -1,6 +1,4 @@
 import React, { useState } from "react";
-import { doc, updateDoc } from "firebase/firestore";
-import { db } from "../../firebase/Firebase";
 import './Admin.css';
 
 const Admin = () => {
@@ -23,10 +21,15 @@ const Admin = () => {
     e.preventDefault();
 
     try {
-      const documentId = "GF8lmn4pjyeuqPzA0xDE";
-      const documentRef = doc(db, "rates", documentId);
-
-      await updateDoc(documentRef, rates);
+      const res = await fetch('/api/rates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(rates),
+      });
+      if (!res.ok) {
+        throw new Error(`Failed to update rates: ${res.status}`);
+      }
+      await res.json();
       alert("Rates updated successfully!");
       setRates({
         vedhani: "",
