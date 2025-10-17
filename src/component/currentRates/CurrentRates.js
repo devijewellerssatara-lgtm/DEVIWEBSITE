@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { BsGraphUpArrow } from 'react-icons/bs';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../../firebase/Firebase'; 
 import borderLine from '../../images/border_line.png';
 import './CurrentRates.css';  
+
+const API_URL = process.env.REACT_APP_API_URL || '';
 
 const CurrentRates = () => {
   const [rates, setRates] = useState({
@@ -16,15 +16,9 @@ const CurrentRates = () => {
   useEffect(() => {
     const fetchRates = async () => {
       try {
-        const documentId = "GF8lmn4pjyeuqPzA0xDE";
-        const docRef = doc(db, "rates", documentId);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-          setRates(docSnap.data());
-        } else {
-          console.log("No such document!");
-        }
+        const res = await fetch(`${API_URL}/api/rates`);
+        const data = await res.json();
+        setRates(data);
       } catch (error) {
         console.error("Error fetching rates: ", error);
       }

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import './UploadImage.css';
+
+const API_URL = process.env.REACT_APP_API_URL || '';
 
 const UploadImage = () => {
   const [image, setImage] = useState(null);
@@ -11,39 +12,37 @@ const UploadImage = () => {
     if (e.target.files[0]) {
       setImage(e.target.files[0]);
       setStatus('');
+      setProgress(0);
     }
   };
 
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (!image) {
       setStatus('Please select an image first.');
       return;
     }
 
-    const storage = getStorage();
-    const timestamp = new Date().getTime(); // Generate a timestamp
-    const fileName = `${timestamp}_${image.name}`; // Include timestamp in the file name
-    const storageRef = ref(storage, `images/${fileName}`);
-    const uploadTask = uploadBytesResumable(storageRef, image);
+    try {
+      const formData = new FormData();
+      formData.append('image', image);
 
-    uploadTask.on(
-      'state_changed',
-      (snapshot) => {
-        const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-        setProgress(progress);
-        setStatus(`Uploading... ${progress}%`);
-      },
-      (error) => {
-        console.error(error);
-        setStatus('Upload failed. Please try again.');
-      },
-      () => {
-        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-          console.log('File available at', downloadURL);
-          setStatus('Upload successful!');
-        });
-      }
-    );
+      setStatus('Uploading...');
+      // Note: fetch does not provide native progress events; we show a spinner-like status.
+      const res = await fetch(`${API_URL}/api/images`, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!res.ok) throw new Error('Upload failed');
+
+      const data = await res.json();
+      setProgress(100);
+      setStatus('Upload successful!');
+      console.log('File available at', `${API_URL}${data.url}`);
+    } catch (err) {
+      console.error(err);
+      setStatus('Upload failed. Please try again.');
+    }
   };
 
   return (
